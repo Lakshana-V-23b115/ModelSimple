@@ -1,107 +1,86 @@
-
-
+from flask import Flask, render_template_string, request
 import datetime
-import logging
 
+app = Flask(__name__)
 
-# -------------------------------
-# Logging Configuration
-# -------------------------------
-logging.basicConfig(
-    filename="app.log",
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
+# Function for time-based greeting
+def get_greeting(name):
+    hour = datetime.datetime.now().hour
+    if hour < 12:
+        greet = "Good Morning"
+    elif hour < 18:
+        greet = "Good Afternoon"
+    else:
+        greet = "Good Evening"
+    return f"{greet}, {name}!"
 
+# HTML Template
+html_page = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hello World App</title>
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            background-color: #f2f2f2;
+            margin-top: 100px;
+        }
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            display: inline-block;
+            box-shadow: 0px 0px 10px gray;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
 
-# -------------------------------
-# Greeting Class
-# -------------------------------
-class HelloWorldApp:
-    def __init__(self, user_name="Guest"):
-        self.user_name = user_name
-        logging.info("Application initialized for user: %s", user_name)
+<div class="box">
+    <h2>Hello World Web App</h2>
 
-    def get_time_based_greeting(self):
-        """Return greeting based on current time"""
-        current_hour = datetime.datetime.now().hour
+    <form method="post">
+        <input type="text" name="username" placeholder="Enter your name" required>
+        <br><br>
+        <button type="submit" name="type" value="simple">Simple Hello</button>
+        <button type="submit" name="type" value="enthusiastic">Enthusiastic</button>
+        <button type="submit" name="type" value="formal">Formal</button>
+    </form>
 
-        if 0 <= current_hour < 12:
-            return "Good Morning"
-        elif 12 <= current_hour < 18:
-            return "Good Afternoon"
+    {% if message %}
+        <h3>{{ message }}</h3>
+    {% endif %}
+</div>
+
+</body>
+</html>
+"""
+
+@app.route("/", methods=["GET", "POST"])
+def home():
+    message = ""
+    if request.method == "POST":
+        name = request.form.get("username", "Guest")
+        choice = request.form.get("type")
+
+        base = get_greeting(name)
+
+        if choice == "simple":
+            message = f"Hello, {name}!"
+        elif choice == "enthusiastic":
+            message = f"HELLOOOO {name}!!! 🎉🔥"
+        elif choice == "formal":
+            message = f"Greetings, {name}. It is a pleasure to meet you."
         else:
-            return "Good Evening"
+            message = base
 
-    def display_welcome(self):
-        """Display welcome message"""
-        greeting = self.get_time_based_greeting()
-        message = f"{greeting}, {self.user_name}! Welcome to the Hello World App."
-        print(message)
-        logging.info("Displayed welcome message")
+    return render_template_string(html_page, message=message)
 
-    def display_menu(self):
-        """Show menu options"""
-        print("\nChoose a greeting style:")
-        print("1. Simple Hello")
-        print("2. Enthusiastic Hello")
-        print("3. Formal Hello")
-        print("4. Exit")
-
-    def process_choice(self, choice):
-        """Process user choice"""
-        if choice == "1":
-            print(f"Hello, {self.user_name}!")
-        elif choice == "2":
-            print(f"HELLOOOO {self.user_name}!!! 🎉🔥")
-        elif choice == "3":
-            print(f"Greetings, {self.user_name}. It is a pleasure to meet you.")
-        elif choice == "4":
-            print("Exiting application. Goodbye!")
-            logging.info("Application exited by user")
-            return False
-        else:
-            print("Invalid choice. Please try again.")
-            logging.warning("Invalid menu choice entered")
-
-        return True
-
-
-# -------------------------------
-# Utility Function
-# -------------------------------
-def get_user_name():
-    """Get user name from input"""
-    name = input("Enter your name: ").strip()
-    if not name:
-        name = "Guest"
-    return name
-
-
-# -------------------------------
-# Main Function
-# -------------------------------
-def main():
-    print("===== Hello World Application =====")
-
-    name = get_user_name()
-    app = HelloWorldApp(name)
-
-    app.display_welcome()
-
-    running = True
-    while running:
-        app.display_menu()
-        choice = input("Enter your choice: ")
-        running = app.process_choice(choice)
-
-
-# -------------------------------
-# Entry Point
-# -------------------------------
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        logging.error("An error occurred: %s", str(e))
-        print("Something went wrong. Please check logs.")
+    app.run(debug=True)
